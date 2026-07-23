@@ -1,0 +1,14 @@
+.git/
+.gitignore
+.gitattributes
+.env
+config.env
+config.env.example
+data/
+*.log
+cache.json
+proposals.csv
+__pycache__/
+*.pyc
+venv/
+README.md

@@ -1,0 +1,11 @@
+services:
+  rater:
+    build: .
+    image: kavita-age-rater
+    container_name: kavita-age-rater
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      # Persistent state (cache.json, proposals.csv, log).
+      # On the server DATA_PATH=/opt/appdata/age_rater ; defaults to ./data locally.
+      - ${DATA_PATH:-./data}:/data
