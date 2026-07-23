@@ -20,8 +20,8 @@
   * { box-sizing: border-box; }
   body { margin:0; background:var(--bg); color:var(--text);
     font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
-  header { padding:14px 20px; background:var(--panel); border-bottom:1px solid var(--border);
-    position:sticky; top:0; z-index:10; }
+  .topbar { position:sticky; top:0; z-index:10; }
+  header { padding:14px 20px; background:var(--panel); border-bottom:1px solid var(--border); }
   .row { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
   h1 { font-size:17px; margin:0; font-weight:650; }
   .counts { display:flex; gap:8px; flex-wrap:wrap; }
@@ -36,7 +36,7 @@
   button.primary:hover { filter:brightness(1.07); }
   button:disabled { opacity:.5; cursor:default; }
   .toolbar { padding:10px 20px; background:var(--panel); border-bottom:1px solid var(--border);
-    display:flex; gap:10px; align-items:center; flex-wrap:wrap; position:sticky; top:53px; z-index:9; }
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
   input[type=search]{ padding:6px 10px; border:1px solid var(--border); border-radius:7px;
     background:var(--bg); color:var(--text); min-width:200px; }
   select { padding:5px 8px; border:1px solid var(--border); border-radius:7px; background:var(--bg); color:var(--text); }
@@ -47,7 +47,8 @@
   table { width:100%; border-collapse:collapse; background:var(--panel);
     border:1px solid var(--border); border-radius:10px; overflow:hidden; }
   th,td { padding:9px 12px; text-align:left; border-bottom:1px solid var(--border); vertical-align:top; }
-  th { font-size:12px; color:var(--muted); font-weight:600; position:sticky; top:99px; background:var(--panel); }
+  th { font-size:12px; color:var(--muted); font-weight:600; position:sticky;
+    top:var(--thead-top,0); z-index:5; background:var(--panel); }
   tbody tr:hover { background:var(--row-hover); }
   td.book b { font-weight:600; } td.book small { color:var(--muted); display:block; }
   .conf { font-variant-numeric:tabular-nums; font-weight:600; }
@@ -66,6 +67,7 @@
 </style>
 </head>
 <body>
+<div class="topbar">
 <header>
   <div class="row">
     <h1>📚 Kavita Age-Rater</h1>
@@ -91,6 +93,7 @@
   <button onclick="skipSelected()">Skip</button>
   <button onclick="unskipSelected()">Un-skip</button>
   <button class="primary" onclick="commitAllPending()">Commit all pending ▶</button>
+</div>
 </div>
 
 <div class="wrap">
@@ -218,6 +221,13 @@ document.getElementById("search").addEventListener("input", e => {
 document.getElementById("conf").addEventListener("input", e => {
   minConf = +e.target.value; document.getElementById("confVal").textContent = minConf.toFixed(2); render();
 });
+
+// keep the sticky table header directly below the (variable-height) top bar
+const topbar = document.querySelector(".topbar");
+function setTheadTop(){ document.documentElement.style.setProperty("--thead-top", topbar.offsetHeight + "px"); }
+new ResizeObserver(setTheadTop).observe(topbar);
+window.addEventListener("resize", setTheadTop);
+setTheadTop();
 
 load();
 setInterval(() => { if (!document.querySelector("select:focus")) load(); }, 15000);
