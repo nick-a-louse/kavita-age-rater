@@ -206,8 +206,10 @@ def scan_once(kav, client, model, limit=0, reclassify=False, log=print) -> dict:
     to_classify, considered = [], 0
 
     for s in series:
-        current = s.get("ageRating") or 0
+        # NOTE: the Series list API does NOT include ageRating — only the
+        # per-series metadata call does. Read the authoritative value from md.
         md = kav.series_metadata(s["id"])
+        current = md.get("ageRating") or 0
         authors = "; ".join(w.get("name", "") for w in md.get("writers", []))
         genres = "; ".join(g.get("title", "") for g in md.get("genres", []))
         summary = (md.get("summary") or "").strip()
@@ -248,6 +250,12 @@ def scan_once(kav, client, model, limit=0, reclassify=False, log=print) -> dict:
             db.upsert_pending({**b, "proposed_rating": r["rating"],
                                "confidence": r["confidence"], "reasoning": r["reasoning"]})
             stats["classified"] += 1
+
+    # Drop DB rows for series that no longer exist in Kavita (e.g. a CWA
+    # re-import replaced a book with a new series id). Guarded so a transient
+    # empty/failed listing can't wipe the DB.
+    if series:
+        stats["pruned"] = db.prune_missing({s["id"] for s in series})
     return stats
 
 

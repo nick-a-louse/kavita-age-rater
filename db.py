@@ -172,6 +172,16 @@ def counts() -> dict:
         return d
 
 
+def prune_missing(valid_ids: set) -> int:
+    """Delete rows whose series_id is no longer present in Kavita. Returns count."""
+    with _LOCK, _connect() as c:
+        existing = [row["series_id"] for row in c.execute("SELECT series_id FROM series")]
+        gone = [sid for sid in existing if sid not in valid_ids]
+        for sid in gone:
+            c.execute("DELETE FROM series WHERE series_id=?", (sid,))
+        return len(gone)
+
+
 def seed_from_cache(cache_path: Path) -> int:
     """One-time import of the old cache.json (rating/confidence/reasoning by id)
     so upgrading to the DB doesn't re-spend on classification."""
