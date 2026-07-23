@@ -4,6 +4,9 @@ services:
     image: kavita-age-rater
     container_name: kavita-age-rater
     restart: unless-stopped
+    # Run as the host 'readonly-user' user so state files under /opt/appdata are
+    # owned by that account and editable without sudo.
+    user: "1009:1009"
     env_file: .env
     volumes:
       # Persistent state (cache.json, proposals.csv, log).
