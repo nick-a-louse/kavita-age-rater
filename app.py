@@ -10,7 +10,7 @@ import time
 import traceback
 from pathlib import Path
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, Response, jsonify, render_template, request
 from waitress import serve
 
 import age_rater as core
@@ -47,8 +47,13 @@ def _run_scan(reclassify: bool = False) -> None:
         result = core.scan_once(kav, client, core.model_from_env(),
                                 reclassify=reclassify, log=log)
         _scan_state.update(last_result=result, progress="done")
+        # Persisted so /metrics survives a container restart (otherwise a
+        # restart would look like a stale scan and fire the alert).
+        db.set_meta("last_success_epoch", str(int(time.time())))
+        db.set_meta("last_scan_ok", "1")
     except Exception as e:  # noqa: BLE001
         _scan_state["last_error"] = str(e)
+        db.set_meta("last_scan_ok", "0")
         traceback.print_exc()
     finally:
         _scan_state.update(running=False, last_run=time.strftime("%Y-%m-%d %H:%M:%S"))
@@ -97,6 +102,38 @@ def api_state():
         "interval_hours": INTERVAL_HOURS,
         "auto_scan": AUTO_SCAN,
     })
+
+
+@app.get("/metrics")
+def metrics():
+    """Prometheus metrics for VictoriaMetrics. Deliberately does no external
+    calls (Kavita/Anthropic) so scrapes are cheap and can't fail spuriously —
+    upstream problems surface as last_scan_ok=0 / a stale timestamp."""
+    c = db.counts()
+    try:
+        last_epoch = int(float(db.get_meta("last_success_epoch", "0") or 0))
+    except ValueError:
+        last_epoch = 0
+    last_ok = 1 if db.get_meta("last_scan_ok", "0") == "1" else 0
+    out = [
+        "# HELP age_rater_up 1 if the age-rater app is responding.",
+        "# TYPE age_rater_up gauge",
+        "age_rater_up 1",
+        "# HELP age_rater_last_scan_timestamp_seconds Unix time of the last SUCCESSFUL scan.",
+        "# TYPE age_rater_last_scan_timestamp_seconds gauge",
+        f"age_rater_last_scan_timestamp_seconds {last_epoch}",
+        "# HELP age_rater_last_scan_ok 1 if the most recent scan finished without error.",
+        "# TYPE age_rater_last_scan_ok gauge",
+        f"age_rater_last_scan_ok {last_ok}",
+        "# HELP age_rater_scan_running 1 while a scan is in progress.",
+        "# TYPE age_rater_scan_running gauge",
+        f"age_rater_scan_running {1 if _scan_state['running'] else 0}",
+        "# HELP age_rater_books Books by review status.",
+        "# TYPE age_rater_books gauge",
+    ]
+    for st in ("pending", "committed", "skipped"):
+        out.append(f'age_rater_books{{status="{st}"}} {c.get(st, 0)}')
+    return Response("\n".join(out) + "\n", mimetype="text/plain; version=0.0.4")
 
 
 @app.post("/api/override")
