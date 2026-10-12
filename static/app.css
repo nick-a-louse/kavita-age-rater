@@ -42,12 +42,12 @@ input[type=checkbox] { accent-color: var(--accent); width: 16px; height: 16px; }
 .review th.num, .review td.num { text-align: right; font-family: inherit; }
 .review th.num { font-weight: 600; }   /* gomez-ui .num is the big-figure style; here it only means "number column" */
 .review col.c-sel { width: 36px; }
-.review col.c-book { width: 24%; }
-.review col.c-prop { width: 9rem; }
+.review col.c-book { width: 21%; }
+.review col.c-prop { width: 8rem; }
 .review col.c-conf { width: 6rem; }
-.review col.c-apply { width: 11.5rem; }
-.review col.c-status { width: 8rem; }
-.review col.c-act { width: 7rem; }
+.review col.c-apply { width: 10.5rem; }
+.review col.c-status { width: 6.5rem; }
+.review col.c-act { width: 6rem; }
 .review tbody tr:hover { background: var(--row-hover); }
 .review td.book b { font-weight: 600; }
 .review td.book small, .review small.sub { display: block; color: var(--muted); font-size: 13px; }
