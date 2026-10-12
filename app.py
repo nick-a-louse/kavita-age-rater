@@ -4,10 +4,12 @@ Long-running container: a background scheduler periodically classifies unrated
 Kavita books with Claude (storing results in SQLite), and a small web UI lets you
 review, override, and commit those age ratings to Kavita individually or in bulk.
 """
+import mimetypes
 import os
 import threading
 import time
 import traceback
+from datetime import datetime, timezone
 from pathlib import Path
 
 from flask import Flask, Response, jsonify, render_template, request
@@ -20,10 +22,18 @@ HERE = Path(__file__).resolve().parent
 for candidate in (HERE / ".env", HERE / "config.env"):
     core.load_env_file(candidate)
 
-WEB_PORT = int(os.environ.get("WEB_PORT", "8080"))
+WEB_PORT = int(os.environ.get("WEB_PORT", "8000"))
 INTERVAL_HOURS = float(os.environ.get("INTERVAL_HOURS", "24"))
 AUTO_SCAN = os.environ.get("AUTO_SCAN", "true").lower() not in ("0", "false", "no")
 
+# Release number. The image build adds its git commit (APP_VERSION, e.g. "sha-25556b1...").
+RELEASE = "1.1.0"
+_build = os.environ.get("APP_VERSION", "").strip()
+if _build.startswith("sha-"):
+    _build = _build[:11]
+VERSION = RELEASE if not _build or _build.lstrip("v") == RELEASE else f"{RELEASE} ({_build})"
+
+mimetypes.add_type("application/manifest+json", ".webmanifest")
 app = Flask(__name__)
 
 # ---- scan state / scheduler -------------------------------------------------
@@ -76,10 +86,43 @@ def _rating_order(value_to_title: dict) -> list:
     return [value_to_title[v] for v in sorted(value_to_title) if v >= 2]
 
 
+def _last_success() -> tuple[str, int]:
+    """ISO time (UTC) and Unix time of the last successful scan; ("", 0) if none."""
+    try:
+        epoch = int(float(db.get_meta("last_success_epoch", "0") or 0))
+    except ValueError:
+        epoch = 0
+    iso = datetime.fromtimestamp(epoch, timezone.utc).isoformat() if epoch else ""
+    return iso, epoch
+
+
+def _fresh_limits() -> tuple[int, int]:
+    """Minutes the Updated line stays green, and when it turns red: one scan interval
+    plus 2 h of slack, then twice the interval plus 1 h."""
+    ok = int(INTERVAL_HOURS * 60 + 120)
+    return ok, int(INTERVAL_HOURS * 120 + 60)
+
+
 # ---- routes -----------------------------------------------------------------
 @app.get("/")
 def index():
-    return render_template("index.html")
+    iso, _ = _last_success()
+    ok_mins, stale_mins = _fresh_limits()
+    last_error = _scan_state["last_error"] if db.get_meta("last_scan_ok", "") == "0" else None
+    return render_template("index.html", version=VERSION, last_success_iso=iso,
+                           ok_mins=ok_mins, stale_mins=stale_mins, last_error=last_error)
+
+
+@app.get("/healthz")
+def healthz():
+    """200 while the database answers and scans are not overdue; 503 otherwise.
+    Before the first successful scan it reports healthy, so a fresh install can start."""
+    db.counts()
+    _, epoch = _last_success()
+    _, stale_mins = _fresh_limits()
+    overdue = AUTO_SCAN and epoch and (time.time() - epoch) > stale_mins * 60
+    body = {"ok": not overdue, "version": VERSION, "last_scan_ok": db.get_meta("last_scan_ok", "") != "0"}
+    return jsonify(body), (503 if overdue else 200)
 
 
 @app.get("/api/state")
@@ -98,6 +141,8 @@ def api_state():
         "series": db.list_series(status=request.args.get("status", ""),
                                  search=request.args.get("search", "")),
         "scan": _scan_state,
+        "last_success_iso": _last_success()[0],
+        "last_scan_ok": db.get_meta("last_scan_ok", "") != "0",
         "kavita_error": kav_error,
         "interval_hours": INTERVAL_HOURS,
         "auto_scan": AUTO_SCAN,
@@ -116,6 +161,9 @@ def metrics():
         last_epoch = 0
     last_ok = 1 if db.get_meta("last_scan_ok", "0") == "1" else 0
     out = [
+        "# HELP age_rater_build_info Build information.",
+        "# TYPE age_rater_build_info gauge",
+        f'age_rater_build_info{{version="{VERSION}"}} 1',
         "# HELP age_rater_up 1 if the age-rater app is responding.",
         "# TYPE age_rater_up gauge",
         "age_rater_up 1",
@@ -210,7 +258,7 @@ def main() -> None:
     if seeded:
         print(f"[init] seeded {seeded} rows from cache.json", flush=True)
     threading.Thread(target=_scheduler, daemon=True).start()
-    print(f"[web] serving on 0.0.0.0:{WEB_PORT} (auto_scan={AUTO_SCAN}, "
+    print(f"[web] v{VERSION} serving on 0.0.0.0:{WEB_PORT} (auto_scan={AUTO_SCAN}, "
           f"interval={INTERVAL_HOURS}h)", flush=True)
     serve(app, host="0.0.0.0", port=WEB_PORT, threads=8)
 

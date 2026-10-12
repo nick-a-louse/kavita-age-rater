@@ -1,17 +1,17 @@
 services:
   rater:
-    build: .
-    image: kavita-age-rater
+    image: ghcr.io/nick-a-louse/kavita-age-rater:latest
     container_name: kavita-age-rater
     restart: unless-stopped
-    # Run as the host 'readonly-user' user so state files under /opt/appdata are
-    # owned by that account and editable without sudo.
-    user: "1009:1009"
+    user: "${PUID:-1003}:${PGID:-1006}"   # PUID/PGID live in .env, like the linuxserver containers
     env_file: .env
     ports:
-      # Web UI: browse to http://<server>:HOST_PORT
-      - "${HOST_PORT:-5058}:8080"
+      - "5058:8000"                       # registered in Obsidian: App standard → Port register
     volumes:
-      # Persistent state (SQLite db, log). On the server DATA_PATH is set in .env
-      # (e.g. /opt/appdata/kavita-age-rater); defaults to ./data locally.
-      - ${DATA_PATH:-./data}:/data
+      # SQLite db + log. Owned by PUID:PGID:  sudo chown -R 1003:1006 /opt/appdata/kavita-age-rater
+      - /opt/appdata/kavita-age-rater:/data
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

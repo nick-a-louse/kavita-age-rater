@@ -1,0 +1,94 @@
+/* Kavita Age-Rater: app-specific styles on top of gomez-ui.css (TECH-P8).
+   gomez-ui provides fonts, neutrals, header, buttons, segments, width and footer.
+   This file sets the accent and the review table, status badges and confirm bar. */
+
+:root {
+  --accent-l: #2e5bd9; --accent-d: #7fa2fb;      /* registered accent: book blue */
+  --row-hover: rgba(46, 91, 217, 0.06);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --row-hover: rgba(127, 162, 251, 0.08); }
+}
+:root[data-theme="dark"] { --row-hover: rgba(127, 162, 251, 0.08); }
+
+/* ---------------------------------------------------------------- counts + toolbar */
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; padding-block: 14px 0; }
+.toolbar.actions { padding-block: 10px 14px; }
+.toolbar .spacer { flex: 1; }
+.counts { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 14px; color: var(--muted); padding-top: 16px; }
+.counts b { color: var(--ink); font-weight: 600; }
+.counts .c-pending b { color: var(--warn); }
+.counts .c-committed b { color: var(--good); }
+input[type=search], select {
+  font: inherit; font-size: 14px; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line-strong); border-radius: var(--radius-sm); min-height: 36px; padding: 6px 10px;
+}
+input[type=search] { min-width: 220px; }
+.conf-filter, .sel-all { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); min-height: 36px; }
+.conf-filter output { font-variant-numeric: tabular-nums; min-width: 2.6em; color: var(--ink); }
+input[type=range] { accent-color: var(--accent); }
+input[type=checkbox] { accent-color: var(--accent); width: 16px; height: 16px; }
+
+/* in-page confirm (replaces the browser confirm() pop-up) */
+.confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 12px;
+  padding: 10px 12px; border: 1px solid var(--accent); border-radius: var(--radius-sm); background: var(--surface); }
+.confirm p { flex: 1 1 260px; font-size: 15px; }
+
+/* ---------------------------------------------------------------- review table */
+.table-wrap { overflow-x: auto; }
+.review { min-width: 1040px; table-layout: fixed; }
+.review th { position: sticky; top: 0; z-index: 2; background: var(--bg); }
+.review th, .review td { vertical-align: top; }
+.review th.num, .review td.num { text-align: right; font-family: inherit; }
+.review th.num { font-weight: 600; }   /* gomez-ui .num is the big-figure style; here it only means "number column" */
+.review col.c-sel { width: 36px; }
+.review col.c-book { width: 24%; }
+.review col.c-prop { width: 9rem; }
+.review col.c-conf { width: 6rem; }
+.review col.c-apply { width: 11.5rem; }
+.review col.c-status { width: 8rem; }
+.review col.c-act { width: 7rem; }
+.review tbody tr:hover { background: var(--row-hover); }
+.review td.book b { font-weight: 600; }
+.review td.book small, .review small.sub { display: block; color: var(--muted); font-size: 13px; }
+.review td.why { color: var(--muted); font-size: 14px; }
+.review select { width: 100%; }
+.conf { font-family: var(--font-num); font-weight: 700; font-size: 17px; }
+.conf.lo { color: var(--bad); } .conf.mid { color: var(--warn); } .conf.hi { color: var(--good); }
+.badge { display: inline-block; font-size: 12px; font-weight: 600; line-height: 1; padding: 4px 8px 3px;
+  border-radius: 20px; border: 1px solid currentColor; text-transform: capitalize; }
+.b-pending { color: var(--warn); } .b-committed { color: var(--good); } .b-skipped { color: var(--faint); }
+.empty { color: var(--muted); padding: 40px 8px; text-align: center; }
+
+/* Wide screens: no horizontal scroller, so the header row stays stuck to the top
+   while the page scrolls. */
+@media (min-width: 900px) { .table-wrap { overflow: visible; } }
+
+/* toast */
+.flash { position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  background: var(--surface); color: var(--ink); border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
+  padding: 10px 16px; box-shadow: 0 6px 24px rgba(0,0,0,.18); opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 10; }
+.flash.show { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .flash { transition: none; } }
+
+/* Phones: each book becomes a card (name and confidence, rating to apply, status
+   and commit, then the reason). */
+@media (max-width: 760px) {
+  .review { min-width: 0; }
+  .review thead, .review colgroup { display: none; }
+  .review, .review tbody { display: block; }
+  .review tr { display: grid; grid-template-columns: 28px 1fr auto; column-gap: 10px; row-gap: 8px;
+    grid-template-areas: "pick book cf" ". prop prop" ". apply apply" ". st act" ". why why";
+    padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .review td { display: block; padding: 0; border: 0; }
+  .review td.pick { grid-area: pick; } .review td.book { grid-area: book; } .review td.cf { grid-area: cf; }
+  .review td.prop { grid-area: prop; font-size: 14px; }
+  .review td.prop::before { content: attr(data-label) ": "; color: var(--muted); }
+  .review td.apply { grid-area: apply; } .review td.st { grid-area: st; align-self: center; }
+  .review td.act { grid-area: act; } .review td.why { grid-area: why; }
+}
+@media (max-width: 640px) {
+  input[type=search] { min-width: 0; flex: 1 1 100%; }
+  .toolbar .spacer { display: none; }
+  .toolbar.actions .btn-primary { flex: 1 1 100%; }
+}

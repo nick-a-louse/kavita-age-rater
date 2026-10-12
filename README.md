@@ -1,4 +1,4 @@
-# Kavita age-rater
+# Kavita Age-Rater
 
 Assigns age ratings to the books in a [Kavita](https://www.kavitareader.com/)
 library using Claude, so that restricted kids' accounts — and the
@@ -8,6 +8,20 @@ see age-appropriate books.
 It runs as a **long-running Docker container** with a **web UI**: a background
 scheduler classifies unrated books with Claude, and you review, override, and
 commit the ratings from your browser.
+
+## What it does
+
+Open `http://your-server:5058`. You get a
+table of books with their proposed rating, confidence (colour-coded, lowest
+first), and reason. From there you can:
+
+- Filter by **Pending / Committed / Skipped / All**, search by title/author, and
+  hide low-confidence rows with the **min-confidence** slider.
+- Change the **Rating to apply** dropdown on any row (an override).
+- **Commit** a single row, a multi-select, or **all pending** at once. You confirm
+  on the page first; each commit writes the rating to Kavita, locked.
+- **Skip** books to leave them unrated.
+- **Rescan now** to classify newly added / changed books immediately.
 
 ## Why
 
@@ -27,42 +41,57 @@ Classifications are cached, so scheduled runs only classify **new or changed**
 books. Anything Claude is unsure about is left **Rating Pending** (hidden from
 restricted accounts) until you confirm it.
 
-## Web UI
+It follows the gomez app standard (shared look, GitHub Actions → ghcr.io → Docker on
+gomez); the standard is in Obsidian: *Atlas/Technology/Server/App standard*.
 
-Browse to `http://<server-ip>:<HOST_PORT>` (default port `5058`). You get a
-table of books with their proposed rating, confidence (colour-coded, lowest
-first), and reason. From there you can:
+## Set up on gomez
 
-- Filter by **Pending / Committed / Skipped / All**, search by title/author, and
-  hide low-confidence rows with the **min-confidence** slider.
-- Change the **Rating to apply** dropdown on any row (an override).
-- **Commit** a single row, a multi-select, or **all pending** at once — each
-  commit writes the rating to Kavita, locked.
-- **Skip** books to leave them unrated.
-- **Rescan now** to classify newly added / changed books immediately.
+You need Docker and a login to GitHub's container registry (already done on gomez
+for Parkrun: `docker login ghcr.io` as root with a `read:packages` token).
+
+1. **Create folders and config.**
+   ```bash
+   sudo mkdir -p /srv/kavita-age-rater /opt/appdata/kavita-age-rater
+   sudo chown -R 1003:1006 /opt/appdata/kavita-age-rater   # PUID:PGID from .env
+   cd /srv/kavita-age-rater
+   # copy docker-compose.yml and .env.example from this repo, then:
+   sudo install -m 600 /dev/null .env      # fill it in from .env.example
+   ```
+2. **Start it.**
+   ```bash
+   sudo docker compose pull && sudo docker compose up -d
+   sudo docker compose logs -f            # watch the first scan
+   ```
+
+### Updating
+
+```bash
+cd /srv/kavita-age-rater && sudo docker compose pull && sudo docker compose up -d
+```
+The database lives in `/opt/appdata/kavita-age-rater`, so updates and restarts keep
+every classification, override and commit.
+
+### Access
+
+Port **5058** on the LAN, and over Tailscale. The app has no login, so don't expose it
+to the internet.
 
 ## Configuration
 
-Copy `.env.example` to `.env` and fill in:
+Settings are environment variables in `.env` (see [.env.example](.env.example)):
 
-- `KAVITA_URL` — e.g. `http://your-server:5053`
-- `KAVITA_API_KEY` — the token from your Kavita OPDS URL (Settings → Account)
-- `ANTHROPIC_API_KEY` — from [console.anthropic.com](https://console.anthropic.com)
-- `HOST_PORT` — web UI port (default `5058`)
-- `AUTO_SCAN` / `INTERVAL_HOURS` — background scan cadence
-- `DATA_PATH` — host folder for the SQLite DB + log (server: `/opt/appdata/kavita-age-rater`)
+| Variable | Default | |
+|---|---|---|
+| `KAVITA_URL` | | e.g. `http://your-server:5053` |
+| `KAVITA_API_KEY` | | The token from your Kavita OPDS URL (Settings → Account) |
+| `ANTHROPIC_API_KEY` | | From [console.anthropic.com](https://console.anthropic.com) |
+| `AGE_RATER_MODEL` | built-in default | Override the Claude model |
+| `AUTO_SCAN` | `true` | Classify unrated books automatically |
+| `INTERVAL_HOURS` | `24` | Hours between automatic scans |
+| `PUID`, `PGID` | `1003`, `1006` | User and group the container runs as (same as the rest of gomez). `/opt/appdata/kavita-age-rater` must belong to them |
+| `TZ` | `Europe/London` | |
 
-## Run
-
-```bash
-docker compose up -d --build
-docker compose logs -f          # watch the first scan
-```
-
-Then open the web UI. The container keeps running: it serves the UI and
-re-scans every `INTERVAL_HOURS`.
-
-## Kids' accounts (the enforcement side)
+### Kids' accounts (the enforcement side)
 
 Ratings only restrict kids if their Kavita account enforces them:
 
@@ -71,9 +100,41 @@ Ratings only restrict kids if their Kavita account enforces them:
 - In Readest, connect that child's account via its **OPDS URL** — Readest then
   only ever sees the books Kavita allows for that account.
 
+## Monitoring
+
+- `GET /healthz` returns 200 while the database answers and scans aren't overdue (more
+  than twice `INTERVAL_HOURS` plus an hour since the last good scan), otherwise 503. The
+  Docker healthcheck uses it, so `docker compose ps` shows `healthy` or `unhealthy`.
+- `GET /metrics` (Prometheus format, scraped by VictoriaMetrics): `age_rater_build_info`,
+  `age_rater_last_scan_timestamp_seconds` (alert when it's old), `age_rater_last_scan_ok`,
+  `age_rater_scan_running` and `age_rater_books{status=...}`. It makes no calls to Kavita
+  or Claude, so scrapes are cheap.
+
+## Development
+
+```bash
+python -m venv .venv && . .venv/bin/activate
+pip install -r requirements-dev.txt
+python -m pytest
+python app.py          # needs KAVITA_URL, KAVITA_API_KEY and ANTHROPIC_API_KEY in .env
+```
+
+The logo is `static/icon.svg`; it's also the favicon. After changing it, regenerate the
+icon set: `pip install cairosvg pillow && python scripts/make_icons.py --name "Kavita Age-Rater" --short "Age-Rater" --accent "#2e5bd9"`.
+
+Pushing to `main` runs the tests and publishes `:latest` to ghcr.io.
+
 ## Files
 
-- `app.py` — Flask web app + background scheduler
-- `age_rater.py` — Kavita API client, Claude classifier, scan/commit logic
-- `db.py` — SQLite store
-- `templates/index.html` — the review UI (self-contained, no external assets)
+```
+.github/workflows/build.yml   tests, then builds the image to ghcr.io
+Dockerfile, docker-compose.yml
+app.py           Flask web app, /healthz, /metrics and the background scheduler
+age_rater.py     Kavita API client, Claude classifier, scan/commit logic
+db.py            SQLite store
+templates/       index.html, the review page
+static/          gomez-ui.css and gomez-ui.js (shared look, copied unchanged), app.css,
+                 app.js, fonts, icon.svg and the generated icons
+scripts/         make_icons.py
+tests/           pytest smoke tests
+```

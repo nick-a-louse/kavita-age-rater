@@ -1,234 +1,95 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-GB">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kavita Age-Rater</title>
-<!-- Favicon: the same 📚 emoji shown beside the page title, drawn as an inline SVG -->
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📚</text></svg>">
-<style>
-  :root {
-    --bg: #f6f7f9; --panel: #fff; --text: #1a1d21; --muted: #667085;
-    --border: #e3e6ea; --accent: #3b6ef5; --accent-text:#fff;
-    --pending:#b5850b; --committed:#1a7f37; --skipped:#8a8f98;
-    --lo:#c0392b; --mid:#b5850b; --hi:#1a7f37;
-    --row-hover:#f0f3f8;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg:#0f1216; --panel:#171b21; --text:#e6e8eb; --muted:#9aa3af;
-      --border:#2a2f37; --accent:#5b86f7; --row-hover:#1d232b;
-      --lo:#e5736a; --mid:#d9a441; --hi:#4bb168; }
-  }
-  * { box-sizing: border-box; }
-  html,body { height:100%; }
-  body { margin:0; background:var(--bg); color:var(--text); overflow:hidden;
-    display:flex; flex-direction:column;
-    font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
-  .topbar { flex:0 0 auto; }
-  header { padding:14px 20px; background:var(--panel); border-bottom:1px solid var(--border); }
-  .row { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
-  h1 { font-size:17px; margin:0; font-weight:650; }
-  .counts { display:flex; gap:8px; flex-wrap:wrap; }
-  .pill { padding:2px 9px; border-radius:20px; font-size:12px; border:1px solid var(--border); background:var(--bg); }
-  .pill b { font-weight:650; }
-  .spacer { flex:1; }
-  .scan { font-size:12px; color:var(--muted); }
-  button { font:inherit; cursor:pointer; border:1px solid var(--border); background:var(--panel);
-    color:var(--text); border-radius:7px; padding:6px 11px; }
-  button:hover { background:var(--row-hover); }
-  button.primary { background:var(--accent); color:var(--accent-text); border-color:transparent; }
-  button.primary:hover { filter:brightness(1.07); }
-  button:disabled { opacity:.5; cursor:default; }
-  .toolbar { padding:10px 20px; background:var(--panel); border-bottom:1px solid var(--border);
-    display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-  input[type=search]{ padding:6px 10px; border:1px solid var(--border); border-radius:7px;
-    background:var(--bg); color:var(--text); min-width:200px; }
-  select { padding:5px 8px; border:1px solid var(--border); border-radius:7px; background:var(--bg); color:var(--text); }
-  .seg { display:flex; border:1px solid var(--border); border-radius:7px; overflow:hidden; }
-  .seg button { border:0; border-radius:0; padding:6px 12px; background:var(--panel); }
-  .seg button.on { background:var(--accent); color:var(--accent-text); }
-  /* the one scroll pane: fills remaining height, scrolls both axes */
-  .wrap { flex:1; min-height:0; overflow:auto; padding:16px 20px 40px; }
-  table { width:100%; min-width:820px; border-collapse:separate; border-spacing:0;
-    background:var(--panel); border:1px solid var(--border); border-radius:10px; }
-  th,td { padding:9px 12px; text-align:left; border-bottom:1px solid var(--border); vertical-align:top; }
-  th { font-size:12px; color:var(--muted); font-weight:600; position:sticky; top:0; z-index:5;
-    background:var(--panel); box-shadow:inset 0 -1px 0 var(--border); }
-  tbody tr:hover { background:var(--row-hover); }
-  td.book b { font-weight:600; } td.book small { color:var(--muted); display:block; }
-  .conf { font-variant-numeric:tabular-nums; font-weight:600; }
-  .conf.lo{color:var(--lo);} .conf.mid{color:var(--mid);} .conf.hi{color:var(--hi);}
-  .why { color:var(--muted); font-size:12.5px; max-width:320px; }
-  .badge { font-size:11px; padding:2px 8px; border-radius:20px; text-transform:capitalize; }
-  .b-pending{ color:var(--pending); border:1px solid var(--pending); }
-  .b-committed{ color:var(--committed); border:1px solid var(--committed); }
-  .b-skipped{ color:var(--skipped); border:1px solid var(--skipped); }
-  .empty { text-align:center; color:var(--muted); padding:40px; }
-  .flash { position:fixed; bottom:16px; left:50%; transform:translateX(-50%);
-    background:var(--panel); border:1px solid var(--border); border-radius:8px;
-    padding:10px 16px; box-shadow:0 6px 24px #0004; opacity:0; transition:opacity .2s; }
-  .flash.show { opacity:1; }
-  a { color:var(--accent); }
-</style>
+<!-- icons: all generated from static/icon.svg, the same file as the header logo -->
+<link rel="icon" href="{{ url_for('static', filename='icon.svg') }}?v={{ version }}" type="image/svg+xml">
+<link rel="icon" href="{{ url_for('static', filename='favicon-32.png') }}?v={{ version }}" sizes="32x32" type="image/png">
+<link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}?v={{ version }}" sizes="any">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png') }}?v={{ version }}">
+<link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}?v={{ version }}">
+<meta name="theme-color" content="#2e5bd9">
+<!-- theme boot + styles, before first paint (gomez-ui) -->
+<meta name="color-scheme" content="light dark">
+<script>try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="stylesheet" href="{{ url_for('static', filename='gomez-ui.css') }}?v={{ version }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}?v={{ version }}">
+<script src="{{ url_for('static', filename='gomez-ui.js') }}?v={{ version }}" defer></script>
+<script src="{{ url_for('static', filename='app.js') }}?v={{ version }}" defer></script>
 </head>
-<body>
-<div class="topbar">
-<header>
-  <div class="row">
-    <h1>📚 Kavita Age-Rater</h1>
-    <div class="counts" id="counts"></div>
-    <div class="spacer"></div>
-    <span class="scan" id="scanStatus"></span>
-    <button id="rescanBtn" onclick="rescan()">Rescan now</button>
+<body class="g-wide">
+<header class="g-header">
+  <div class="wrap g-header-row">
+    <div class="g-brand">
+      <img class="g-app-icon" src="{{ url_for('static', filename='icon.svg') }}?v={{ version }}" alt="">
+      <div class="g-titles">
+        <h1 class="g-title">Kavita Age-Rater</h1>
+        {# Scans run every INTERVAL_HOURS: green up to the interval + 2 h, red after twice that; red at once if the last scan failed. #}
+        <p class="g-updated" id="updated" data-updated="{{ last_success_iso }}" data-ok-mins="{{ ok_mins }}" data-stale-mins="{{ stale_mins }}"{% if last_error %} data-error="The last scan didn't work: {{ last_error }}"{% endif %}>{% if last_success_iso %}Updated{% else %}Not scanned yet{% endif %}</p>
+      </div>
+    </div>
+    <div class="g-actions">
+      <button class="btn" id="rescanBtn" type="button">Rescan now</button>
+      <button class="btn btn-icon g-theme" type="button" aria-label="Theme">
+        <svg data-icon="auto" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/></svg>
+        <svg data-icon="light" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>
+        <svg data-icon="dark" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7z" fill="currentColor"/></svg>
+      </button>
+    </div>
   </div>
+  <div class="wrap"><p class="notice" id="notice" role="status" aria-live="polite" hidden></p></div>
 </header>
 
-<div class="toolbar">
-  <div class="seg" id="statusSeg">
-    <button data-status="pending" class="on">Pending</button>
-    <button data-status="committed">Committed</button>
-    <button data-status="skipped">Skipped</button>
-    <button data-status="all">All</button>
+<main class="wrap">
+  <div class="counts" id="counts" aria-live="polite"></div>
+
+  <div class="toolbar">
+    <div class="seg" id="statusSeg" role="radiogroup" aria-label="Show">
+      <button type="button" role="radio" data-status="pending" aria-checked="true">Pending</button>
+      <button type="button" role="radio" data-status="committed" aria-checked="false">Committed</button>
+      <button type="button" role="radio" data-status="skipped" aria-checked="false">Skipped</button>
+      <button type="button" role="radio" data-status="all" aria-checked="false">All</button>
+    </div>
+    <input type="search" id="search" placeholder="Search title or author" aria-label="Search title or author">
+    <label class="conf-filter" for="conf">Min confidence <input type="range" id="conf" min="0" max="1" step="0.05" value="0"> <output id="confVal" for="conf">0.00</output></label>
   </div>
-  <input type="search" id="search" placeholder="Search title or author…">
-  <label class="scan">min conf <input type="range" id="conf" min="0" max="1" step="0.05" value="0" style="vertical-align:middle"> <span id="confVal">0.00</span></label>
-  <div class="spacer"></div>
-  <label class="scan"><input type="checkbox" id="selAll" onchange="toggleAll(this.checked)"> select shown</label>
-  <button onclick="commitSelected()">Commit selected</button>
-  <button onclick="skipSelected()">Skip</button>
-  <button onclick="unskipSelected()">Un-skip</button>
-  <button class="primary" onclick="commitAllPending()">Commit all pending ▶</button>
-</div>
-</div>
+  <div class="toolbar actions">
+    <label class="sel-all"><input type="checkbox" id="selAll"> Select shown</label>
+    <button class="btn btn-small" type="button" id="commitSelBtn">Commit selected</button>
+    <button class="btn btn-small" type="button" id="skipBtn">Skip</button>
+    <button class="btn btn-small" type="button" id="unskipBtn">Un-skip</button>
+    <span class="spacer"></span>
+    <button class="btn btn-small btn-primary" type="button" id="commitAllBtn">Commit all pending</button>
+  </div>
 
-<div class="wrap">
-  <table>
-    <thead><tr>
-      <th style="width:28px"></th><th>Book</th><th>Proposed</th><th>Conf</th>
-      <th>Rating to apply</th><th>Status</th><th>Why</th><th></th>
-    </tr></thead>
-    <tbody id="rows"></tbody>
-  </table>
-  <div class="empty" id="empty" hidden>Nothing here yet.</div>
-</div>
+  <div class="confirm" id="confirm" role="alertdialog" aria-labelledby="confirmText" hidden>
+    <p id="confirmText"></p>
+    <button class="btn btn-small btn-primary" type="button" id="confirmYes">Commit</button>
+    <button class="btn btn-small" type="button" id="confirmNo">Cancel</button>
+  </div>
 
-<div class="flash" id="flash"></div>
+  <div class="table-wrap">
+    <table class="review">
+      <colgroup><col class="c-sel"><col class="c-book"><col class="c-prop"><col class="c-conf"><col class="c-apply"><col class="c-status"><col class="c-why"><col class="c-act"></colgroup>
+      <thead><tr>
+        <th><span hidden>Select</span></th><th>Book</th><th>Proposed</th><th class="num">Confidence</th>
+        <th>Rating to apply</th><th>Status</th><th>Why</th><th><span hidden>Action</span></th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+  <p class="empty" id="empty" hidden>Nothing here yet.</p>
+</main>
 
-<script>
-let STATE = {series:[], ratings:[], counts:{}, scan:{}};
-let statusFilter = "pending", searchVal = "", minConf = 0;
-let scanPoll = null;
+<footer class="g-footer">
+  <div class="wrap">
+    <span>Kavita Age-Rater · v{{ version }}</span>
+    <span>Ratings proposed by Claude, written to Kavita only when you commit them.</span>
+  </div>
+</footer>
 
-const api = (url, body) => fetch(url, body ? {method:"POST",
-  headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)} : undefined)
-  .then(r => r.json());
-
-function flash(msg){ const f=document.getElementById("flash"); f.textContent=msg;
-  f.classList.add("show"); clearTimeout(f._t); f._t=setTimeout(()=>f.classList.remove("show"),2600); }
-
-function confClass(c){ return c>=0.8?"hi":(c>=0.6?"mid":"lo"); }
-function esc(s){ return (s||"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m])); }
-
-async function load(){
-  const qs = new URLSearchParams({status:statusFilter, search:searchVal});
-  STATE = await fetch("/api/state?"+qs).then(r=>r.json());
-  render();
-}
-
-function render(){
-  // counts
-  const c = STATE.counts||{};
-  document.getElementById("counts").innerHTML =
-    `<span class="pill">total <b>${c.total||0}</b></span>
-     <span class="pill" style="color:var(--pending)">pending <b>${c.pending||0}</b></span>
-     <span class="pill" style="color:var(--committed)">committed <b>${c.committed||0}</b></span>
-     <span class="pill" style="color:var(--skipped)">skipped <b>${c.skipped||0}</b></span>`;
-  // scan status
-  const s = STATE.scan||{};
-  const st = document.getElementById("scanStatus");
-  if (s.running){ st.textContent = "⏳ scanning… " + (s.progress||""); }
-  else if (STATE.kavita_error){ st.textContent = "⚠ Kavita: "+STATE.kavita_error; }
-  else { st.textContent = s.last_run ? ("last scan "+s.last_run) : "not scanned yet"; }
-  document.getElementById("rescanBtn").disabled = !!s.running;
-
-  // rows (client-side confidence filter)
-  const rows = (STATE.series||[]).filter(r => (r.confidence||0) >= minConf || r.status!=="pending");
-  const tb = document.getElementById("rows"); tb.innerHTML = "";
-  document.getElementById("empty").hidden = rows.length>0;
-  const opts = (sel) => ["", ...STATE.ratings].map(r =>
-    `<option ${r===sel?"selected":""} value="${esc(r)}">${r?esc(r):"— (use proposed)"}</option>`).join("");
-  for (const r of rows){
-    const eff = r.override_rating || r.proposed_rating || "";
-    const conf = (r.confidence||0);
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td><input type="checkbox" class="sel" data-id="${r.series_id}"></td>
-      <td class="book"><b>${esc(r.name)}</b><small>${esc(r.authors)||"—"}</small></td>
-      <td>${esc(r.proposed_rating)||"—"}${r.override_rating && r.override_rating!==r.proposed_rating?` <small style="color:var(--muted)">(orig)</small>`:""}</td>
-      <td class="conf ${confClass(conf)}">${conf.toFixed(2)}</td>
-      <td><select onchange="setOverride(${r.series_id}, this.value)">${opts(eff)}</select></td>
-      <td><span class="badge b-${r.status}">${r.status}</span>${r.status==="committed"&&r.committed_rating?`<small style="display:block;color:var(--muted)">${esc(r.committed_rating)}</small>`:""}</td>
-      <td class="why">${esc(r.reasoning)}</td>
-      <td>${r.status==="committed" ? "" : `<button onclick="commitOne(${r.series_id})">Commit</button>`}</td>`;
-    tb.appendChild(tr);
-  }
-  document.getElementById("selAll").checked = false;
-}
-
-function selectedIds(){ return [...document.querySelectorAll(".sel:checked")].map(x=>+x.dataset.id); }
-function toggleAll(on){ document.querySelectorAll(".sel").forEach(x=>x.checked=on); }
-
-async function setOverride(id, val){ await api("/api/override", {series_id:id, override:val}); }
-
-async function commit(ids, allPending=false){
-  if (!allPending && ids.length===0){ flash("Select some rows first."); return; }
-  const n = allPending ? (STATE.counts.pending||0) : ids.length;
-  if (!confirm(`Commit ${n} rating${n===1?"":"s"} to Kavita? This locks them.`)) return;
-  flash("Committing…");
-  const res = await api("/api/commit", allPending ? {all_pending:true} : {ids});
-  if (!res.ok){ flash("Error: "+res.error); return; }
-  flash(`✔ ${res.committed} committed, ${res.skipped} skipped, ${res.failed} failed`);
-  await load();
-}
-const commitOne = id => commit([id]);
-const commitSelected = () => commit(selectedIds());
-const commitAllPending = () => commit([], true);
-
-async function skipSelected(){ const ids=selectedIds(); if(!ids.length){flash("Select rows first.");return;}
-  await api("/api/skip",{ids}); flash(`Skipped ${ids.length}`); await load(); }
-async function unskipSelected(){ const ids=selectedIds(); if(!ids.length){flash("Select rows first.");return;}
-  await api("/api/unskip",{ids}); flash(`Reset ${ids.length} to pending`); await load(); }
-
-async function rescan(){
-  const res = await api("/api/scan", {});
-  if (!res.ok){ flash(res.error||"could not start"); return; }
-  flash("Scan started…");
-  if (scanPoll) clearInterval(scanPoll);
-  scanPoll = setInterval(async () => {
-    await load();
-    if (!STATE.scan.running){ clearInterval(scanPoll); scanPoll=null; flash("Scan complete"); }
-  }, 2500);
-}
-
-// wire up controls
-document.getElementById("statusSeg").addEventListener("click", e => {
-  if (e.target.dataset.status){
-    statusFilter = e.target.dataset.status;
-    [...e.currentTarget.children].forEach(b=>b.classList.toggle("on", b===e.target));
-    load();
-  }
-});
-let searchTimer;
-document.getElementById("search").addEventListener("input", e => {
-  clearTimeout(searchTimer); searchVal = e.target.value;
-  searchTimer = setTimeout(load, 250);
-});
-document.getElementById("conf").addEventListener("input", e => {
-  minConf = +e.target.value; document.getElementById("confVal").textContent = minConf.toFixed(2); render();
-});
-
-load();
-setInterval(() => { if (!document.querySelector("select:focus")) load(); }, 15000);
-</script>
+<div class="flash" id="flash" role="status" aria-live="polite"></div>
 </body>
 </html>
