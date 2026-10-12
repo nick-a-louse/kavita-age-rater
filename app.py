@@ -27,7 +27,7 @@ INTERVAL_HOURS = float(os.environ.get("INTERVAL_HOURS", "24"))
 AUTO_SCAN = os.environ.get("AUTO_SCAN", "true").lower() not in ("0", "false", "no")
 
 # Release number. The image build adds its git commit (APP_VERSION, e.g. "sha-25556b1...").
-RELEASE = "1.1.0"
+RELEASE = "1.1.1"
 _build = os.environ.get("APP_VERSION", "").strip()
 if _build.startswith("sha-"):
     _build = _build[:11]

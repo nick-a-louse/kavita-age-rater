@@ -39,8 +39,6 @@ input[type=checkbox] { accent-color: var(--accent); width: 16px; height: 16px; }
 .review { min-width: 1040px; table-layout: fixed; }
 .review th { position: sticky; top: 0; z-index: 2; background: var(--bg); }
 .review th, .review td { vertical-align: top; }
-.review th.num, .review td.num { text-align: right; font-family: inherit; }
-.review th.num { font-weight: 600; }   /* gomez-ui .num is the big-figure style; here it only means "number column" */
 .review col.c-sel { width: 36px; }
 .review col.c-book { width: 21%; }
 .review col.c-prop { width: 8rem; }

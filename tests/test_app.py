@@ -36,7 +36,8 @@ def test_page_follows_standard(client):
 
 def test_static_and_manifest(client):
     c, _, _ = client
-    assert c.get("/static/gomez-ui.css").status_code == 200
+    css = c.get("/static/gomez-ui.css")
+    assert css.status_code == 200 and b"gomez-ui v1.1" in css.data and b".g-figure" in css.data
     m = c.get("/static/manifest.webmanifest")
     assert m.status_code == 200 and m.mimetype == "application/manifest+json"
     assert m.get_json()["theme_color"] == "#2e5bd9"
