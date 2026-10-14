@@ -1,4 +1,4 @@
-"""Smoke tests: the page follows the gomez app standard and the endpoints answer
+"""Smoke tests: the page follows my shared app standard and the endpoints answer
 without Kavita or Claude being reachable."""
 import importlib
 import sys

@@ -16,7 +16,7 @@ COPY age_rater.py db.py app.py ./
 COPY templates ./templates
 COPY static ./static
 
-# Runs as PUID 1003 / PGID 1006 on gomez (gomez app standard). Compose sets it via user:;
+# Runs as PUID 1003 / PGID 1006 on my server (my app standard). Compose sets it via user:;
 # this default keeps the image non-root when run without compose.
 RUN mkdir -p /data && chown 1003:1006 /data
 USER 1003:1006

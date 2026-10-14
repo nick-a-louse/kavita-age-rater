@@ -41,13 +41,13 @@ Classifications are cached, so scheduled runs only classify **new or changed**
 books. Anything Claude is unsure about is left **Rating Pending** (hidden from
 restricted accounts) until you confirm it.
 
-It follows the gomez app standard (shared look, GitHub Actions → ghcr.io → Docker on
-gomez); the standard is in Obsidian: *Atlas/Technology/Server/App standard*.
+It follows my shared app standard (shared look, GitHub Actions → ghcr.io → Docker; see
+[How this was built](#how-this-was-built)).
 
-## Set up on gomez
+## Set up (Docker)
 
-You need Docker and a login to GitHub's container registry (already done on gomez
-for Parkrun: `docker login ghcr.io` as root with a `read:packages` token).
+You need Docker and a login to GitHub's container registry while the image is
+private (`docker login ghcr.io` with a `read:packages` token).
 
 1. **Create folders and config.**
    ```bash
@@ -88,7 +88,7 @@ Settings are environment variables in `.env` (see [.env.example](.env.example)):
 | `AGE_RATER_MODEL` | built-in default | Override the Claude model |
 | `AUTO_SCAN` | `true` | Classify unrated books automatically |
 | `INTERVAL_HOURS` | `24` | Hours between automatic scans |
-| `PUID`, `PGID` | `1003`, `1006` | User and group the container runs as (same as the rest of gomez). `/opt/appdata/kavita-age-rater` must belong to them |
+| `PUID`, `PGID` | `1003`, `1006` | User and group the container runs as (same as my other containers). `/opt/appdata/kavita-age-rater` must belong to them |
 | `TZ` | `Europe/London` | |
 
 ### Kids' accounts (the enforcement side)
@@ -138,3 +138,17 @@ static/          gomez-ui.css and gomez-ui.js (shared look, copied unchanged), a
 scripts/         make_icons.py
 tests/           pytest smoke tests
 ```
+
+## How this was built
+
+This is one of several self-hosted apps I run at home. The code was written by Claude (an AI coding agent) under my direction. My part was the requirements, the standards, the review and the decisions:
+
+- **Requirements first.** Functional and non-functional requirements were agreed as tickets in Obsidian before any code was written.
+- **One shared standard.** All my apps share one look, one repo layout and one build-and-deploy pipeline (GitHub Actions → GitHub Container Registry → Docker Compose). `gomez-ui.css` and `gomez-ui.js` are the shared UI kit from that standard; gomez is my home server's name.
+- **Reviewed before merging.** Every change came in as a pull request, with screenshots at desktop and phone widths in light and dark mode, and was merged only after I'd reviewed it and the tests passed.
+
+More on how I work this way: [my GitHub profile](https://github.com/nick-a-louse).
+
+## Licence
+
+[MIT](LICENSE). Fonts are Barlow and Barlow Condensed under the SIL Open Font License (see the `OFL.txt` next to them).

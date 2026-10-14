@@ -6,7 +6,7 @@ services:
     user: "${PUID:-1003}:${PGID:-1006}"   # PUID/PGID live in .env, like the linuxserver containers
     env_file: .env
     ports:
-      - "5058:8000"                       # registered in Obsidian: App standard → Port register
+      - "5058:8000"  # host port: change if it clashes
     volumes:
       # SQLite db + log. Owned by PUID:PGID:  sudo chown -R 1003:1006 /opt/appdata/kavita-age-rater
       - /opt/appdata/kavita-age-rater:/data
