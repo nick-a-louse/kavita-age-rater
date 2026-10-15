@@ -1,5 +1,10 @@
 # Kavita Age-Rater
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/desktop-dark.png">
+  <img alt="The review page: each book with its proposed age rating, Claude's confidence and its reasons, ready to commit to Kavita" src="docs/screenshots/desktop-light.png">
+</picture>
+
 Assigns age ratings to the books in a [Kavita](https://www.kavitareader.com/)
 library using Claude, so that restricted kids' accounts — and the
 [Readest](https://readest.com/) apps that connect to them over OPDS — only ever
@@ -22,6 +27,15 @@ first), and reason. From there you can:
   on the page first; each commit writes the rating to Kavita, locked.
 - **Skip** books to leave them unrated.
 - **Rescan now** to classify newly added / changed books immediately.
+
+## On a phone
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/phone-dark.png">
+  <img alt="The review page on a phone, with each book as a card" src="docs/screenshots/phone-light.png" width="300">
+</picture>
+
+The screenshots show invented books, not a real library. They follow your GitHub theme, light or dark, like the app itself.
 
 ## Why
 
@@ -127,6 +141,7 @@ Pushing to `main` runs the tests and publishes `:latest` to ghcr.io.
 ## Files
 
 ```
+docs/screenshots/             the pictures in this README (light and dark, desktop and phone)
 .github/workflows/build.yml   tests, then builds the image to ghcr.io
 Dockerfile, docker-compose.yml
 app.py           Flask web app, /healthz, /metrics and the background scheduler
